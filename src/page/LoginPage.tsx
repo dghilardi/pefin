@@ -1,6 +1,8 @@
 import { Alert, alpha, Box, Button, Container, Stack, Typography, useTheme } from "@mui/material"
 import { useGoogleLogin } from "@react-oauth/google";
+import { useSetAtom } from "jotai";
 import { useState } from "react";
+import { googleSessionAtom } from "../atom/googlesession";
 
 function GoogleIcon() {
     return (
@@ -30,10 +32,11 @@ export const LoginPage = () => {
     const theme = useTheme();
     const [loginError, setLoginError] = useState<string | undefined>();
     const [loading, setLoading] = useState(false);
+    const setGoogleSession = useSetAtom(googleSessionAtom);
     const handleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             setLoading(false);
-            console.log(tokenResponse);
+            setGoogleSession({ accessToken: tokenResponse.access_token });
         },
         onError: (errorResponse) => {
             setLoading(false);
@@ -43,6 +46,7 @@ export const LoginPage = () => {
             setLoading(false);
             setLoginError(error.type);
         },
+        
         scope: ['https://www.googleapis.com/auth/drive.file'].join(' '),
     });
     return <Box
