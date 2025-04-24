@@ -5,23 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^5.0.3",
-    "@tailwindcss/typography": "^0.5.15",
-    "@tailwindcss/vite": "^4.0.0",
-    "@tsconfig/svelte": "^5.0.4",
-    "@types/google.accounts": "^0.0.15",
-    "flowbite": "^3.1.2",
-    "flowbite-svelte": "^0.48.6",
-    "flowbite-svelte-icons": "^2.1.1",
-    "svelte": "^5.23.1",
-    "svelte-check": "^4.1.5",
-    "tailwindcss": "^4.0.0",
+    "@eslint/js": "^9.22.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
     "typescript": "~5.7.2",
+    "typescript-eslint": "^8.26.1",
     "vite": "^6.3.1"
   }
 }
