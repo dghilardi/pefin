@@ -1,14 +1,14 @@
 import { GoogleSession } from "../atom/googlesession";
 
 type Jsonable =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | readonly Jsonable[]
-  | { readonly [key: string]: Jsonable }
-  | { toJSON(): Jsonable };
+    | string
+    | number
+    | boolean
+    | null
+    | undefined
+    | readonly Jsonable[]
+    | { readonly [key: string]: Jsonable }
+    | { toJSON(): Jsonable };
 
 export class BaseError extends Error {
     public readonly context?: Jsonable;
@@ -28,6 +28,17 @@ export class BaseError extends Error {
     }
 }
 
+export type ListFilesQuery = {
+    parent?: string,
+    mimeType?: string,
+    appProperties?: Record<string, string>
+}
+
+export type ListFilesParams = {
+    query?: ListFilesQuery,
+    orderBy?: { f: 'createdTime' | 'modifiedTime' | 'name', o: 'asc' | 'desc' }[],
+};
+
 export type FileResource = {
     id: string,
     name: string,
@@ -38,7 +49,7 @@ export type FileResource = {
 
 export type CreateFileDto = Omit<FileResource, 'id'>
 
-export type ListFilesRes = { files: FileResource[]};
+export type ListFilesRes = { files: FileResource[] };
 
 export class GoogleClient {
     public constructor(
@@ -96,8 +107,19 @@ export class GoogleClient {
         });
     }
 
-    public async listFiles(): Promise<ListFilesRes> {
-        return await this.httpGet('https://www.googleapis.com/drive/v3/files')
+    public async listFiles(params?: ListFilesParams): Promise<ListFilesRes> {
+        const queryStr = params
+            ? '?' + new URLSearchParams({
+                q: !params.query ? '' : [
+                    !params.query.mimeType ? undefined : `mimeType='${params.query.mimeType}'`,
+                    !params.query.parent ? undefined : `'${params.query.parent}' in parents`,
+                    !params.query.appProperties ? undefined : '(' + Object.entries(params.query.appProperties).map(([k, v]) => `appProperties has { key='${k}' and value='${v}' }`).join(' and ') + ')'
+                ].filter(cl => cl).join(' and '),
+                orderBy: !params.orderBy ? '' : params.orderBy.map(cl => `${cl.f} ${cl.o}`).join(',')
+            })
+            : '';
+
+        return await this.httpGet('https://www.googleapis.com/drive/v3/files' + queryStr);
     }
 
     public async createFile(file: CreateFileDto): Promise<FileResource> {

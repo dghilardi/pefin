@@ -9,7 +9,7 @@ export default defineConfig({
     includeAssets: ['favicon.ico', "apple-touc-icon.png", "masked-icon.svg"],
     manifest: {
       name: "Pefin",
-      short_name: "pefin",
+      short_name: "Pefin",
       description: "Personal finance app",
       icons: [{
         src: '/android-chrome-192x192.png',
