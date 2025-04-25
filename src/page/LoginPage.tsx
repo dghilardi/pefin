@@ -2,7 +2,8 @@ import { Alert, alpha, Box, Button, Container, Stack, Typography, useTheme } fro
 import { useGoogleLogin } from "@react-oauth/google";
 import { useSetAtom } from "jotai";
 import { useState } from "react";
-import { googleSessionAtom } from "../atom/googlesession";
+import { GoogleSession, googleSessionAtom } from "../atom/googlesession";
+import { GoogleClient } from "../client/google";
 
 function GoogleIcon() {
     return (
@@ -28,6 +29,34 @@ function GoogleIcon() {
     );
 }
 
+const initializeSpreadsheets = async (session: GoogleSession) => {
+    const client = new GoogleClient(session);
+    const listFilesRes = await client.listFiles();
+
+    if (listFilesRes.files.length === 0) {
+        const dirResource = await client.createFile({
+            name: 'pefin',
+            mimeType: 'application/vnd.google-apps.folder',
+            appProperties: {
+                dirType: 'pefin.root',
+            }
+        });
+        const spreadSheetResource = await client.createFile({
+                name: '2025.xls',
+                parents: [dirResource.id],
+                mimeType: 'application/vnd.google-apps.spreadsheet',
+                appProperties: {
+                    year: '2025'
+                }
+            });
+    } else {
+        for (const f of listFilesRes.files) {
+            console.log(`=> ${f.name}`);
+        }
+    }
+    console.log(listFilesRes);
+};
+
 export const LoginPage = () => {
     const theme = useTheme();
     const [loginError, setLoginError] = useState<string | undefined>();
@@ -36,7 +65,9 @@ export const LoginPage = () => {
     const handleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             setLoading(false);
-            setGoogleSession({ accessToken: tokenResponse.access_token });
+            const session = { accessToken: tokenResponse.access_token };
+            await initializeSpreadsheets(session);
+            setGoogleSession(session);
         },
         onError: (errorResponse) => {
             setLoading(false);
