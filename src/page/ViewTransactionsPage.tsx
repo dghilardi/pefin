@@ -1,0 +1,1 @@
+export const ViewTransactionsPage = () => <h1>View Transactions</h1>;
