@@ -80,4 +80,9 @@ export class RemoteStorageService {
         }
         return result;
     }
+
+    public async insertMovement(date: Date) {
+        const sheets = await this.findFilesByYears([`${date.getFullYear()}`]);
+        console.log(sheets);
+    }
 }

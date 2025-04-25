@@ -2,8 +2,7 @@ import { Alert, alpha, Box, Button, Container, Stack, Typography, useTheme } fro
 import { useGoogleLogin } from "@react-oauth/google";
 import { useSetAtom } from "jotai";
 import { useState } from "react";
-import { GoogleSession, googleSessionAtom } from "../atom/googlesession";
-import { GoogleClient } from "../client/google";
+import { googleSessionAtom } from "../atom/googlesession";
 
 function GoogleIcon() {
     return (
