@@ -125,4 +125,23 @@ export class GoogleClient {
     public async createFile(file: CreateFileDto): Promise<FileResource> {
         return await this.httpPost('https://www.googleapis.com/drive/v3/files', file);
     }
+
+    public async uploadFileContent(fileId: string, contentType: string, body: ReadableStream | XMLHttpRequestBodyInit): Promise<FileResource> {
+        return await this.httpInvoke(`https://www.googleapis.com/upload/drive/v3/files/${fileId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": contentType,
+                "Authorization": `Bearer ${this.session.accessToken}`,
+            },
+            body,
+        });
+    }
+
+    public async downloadTextFile(fileId: string): Promise<string> {
+        return fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: {
+                'Authorization': `Bearer ${this.session.accessToken}`
+            }
+        }).then(res => res.text());
+    }
 }

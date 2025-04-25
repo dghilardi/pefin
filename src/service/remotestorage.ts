@@ -1,12 +1,13 @@
 import { GoogleClient } from "../client/google";
-
+import { AppConfig, defaultAppConfiguration } from "../core/config";
+import { stringify as tomlSerialize, parse as tomlDeserialize } from 'smol-toml';
 export class RemoteStorageInitializer {
     public readonly kind = 'remote-storage-initializer';
     public constructor(
         private client: GoogleClient
     ) {}
 
-    public async initialize(): Promise<RemoteStorageState> {
+    public async initialize(): Promise<[RemoteStorageState, AppConfig]> {
         const listFilesRes = await this.client.listFiles({
             orderBy: [{ f: 'createdTime', o: 'desc' }],
             query: {
@@ -14,11 +15,9 @@ export class RemoteStorageInitializer {
                 appProperties: { dirType: 'pefin.root' },
             }
         });
+        let rootFolderId;
         if (listFilesRes.files.length > 0) {
-            return {
-                rootFolderId: listFilesRes.files[0].id,
-                spreadsheets: {},
-            }
+            rootFolderId = listFilesRes.files[0].id;
         } else {
             const dirResource = await this.client.createFile({
                 name: 'pefin',
@@ -27,11 +26,37 @@ export class RemoteStorageInitializer {
                     dirType: 'pefin.root',
                 }
             });
-            return {
-                rootFolderId: dirResource.id,
-                spreadsheets: {},
-            }
+            rootFolderId = dirResource.id;
         }
+
+        const confFiles = await this.client.listFiles({
+            orderBy: [{ f: 'createdTime', o: 'desc' }],
+            query: {
+                parent: rootFolderId,
+                mimeType: 'text/plain',
+                appProperties: { fileType: 'pefin.config' }
+            }            
+        })
+
+        let config;
+        if (confFiles.files.length > 0) {
+            const configStr = await this.client.downloadTextFile(confFiles.files[0].id);
+            config = tomlDeserialize(configStr) as AppConfig;
+        } else {
+            config = defaultAppConfiguration();
+            const createdFile = await this.client.createFile({
+                name: 'config.toml',
+                parents: [rootFolderId],
+                mimeType: 'text/plain',
+                appProperties: { fileType: 'pefin.config' }
+            });
+            await this.client.uploadFileContent(createdFile.id, 'text/plain', tomlSerialize(config));
+        }
+
+        return [{
+            rootFolderId,
+            spreadsheets: {},
+        }, config]
     }
 }
 
