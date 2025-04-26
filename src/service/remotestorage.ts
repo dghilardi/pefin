@@ -1,5 +1,6 @@
+import { Dayjs } from "dayjs";
 import { GoogleClient } from "../client/google";
-import { AppConfig, defaultAppConfiguration } from "../core/config";
+import { AppConfig, defaultAppConfiguration, TransactionCategory } from "../core/config";
 import { stringify as tomlSerialize, parse as tomlDeserialize } from 'smol-toml';
 export class RemoteStorageInitializer {
     public readonly kind = 'remote-storage-initializer';
@@ -106,8 +107,8 @@ export class RemoteStorageService {
         return result;
     }
 
-    public async insertMovement(date: Date) {
-        const sheets = await this.findFilesByYears([`${date.getFullYear()}`]);
-        console.log(sheets);
+    public async insertMovement(date: Dayjs, category: TransactionCategory, notes: string, amount: number) {
+        const sheets = await this.findFilesByYears([`${date.year()}`]);
+        console.log(`${sheets} -> row ${date};${category};${notes};${amount}`);
     }
 }

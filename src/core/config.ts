@@ -1,9 +1,11 @@
+export type TransactionCategory = {
+    name: string,
+    group: string,
+    type: 'expense' | 'income',
+};
+
 export type AppConfig = {
-    categories: {
-        name: string,
-        group: string,
-        type: 'expense' | 'income',
-    }[],
+    categories: TransactionCategory[],
 }
 
 export const defaultAppConfiguration = (): AppConfig => ({
