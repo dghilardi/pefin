@@ -48,8 +48,68 @@ export type FileResource = {
 };
 
 export type CreateFileDto = Omit<FileResource, 'id'>
+export type UpdateFileDto = Omit<FileResource, 'id' | 'name' | 'parents'> & { name?: string }
 
 export type ListFilesRes = { files: FileResource[] };
+
+export type Spreadsheet = {
+    spreadsheetId: string,
+    properties: {
+        title: string,
+    },
+    sheets: {
+        properties: {
+            index: number,
+            title: string,
+        },
+        data: {
+            startRow: number,
+            startColumn: number,
+            rowData: {
+                values: {
+                    userEnteredValue: { numberValue: number } | { stringValue: string } | { boolValue: boolean } | { formulaValue: string }
+                }[]
+            }[],
+        }[],
+    }[],
+};
+export type SpreadsheetCreateReq = Omit<Spreadsheet, 'spreadsheetId'>;
+export type SpreadsheetCreateRes = Spreadsheet;
+
+export type ValueRange = {
+    range: string,
+    majorDimension?: 'ROWS' | 'COLUMNS',
+    values: Value[][],
+};
+
+export type Value =
+    | string
+    | number
+    | boolean
+    | null
+    | readonly Value[]
+    | { readonly [key: string]: Value };
+
+export type SpreadsheetAppendParams = {
+    valueInputOption: 'RAW' | 'USER_ENTERED',
+    insertDataOption: 'OVERWRITE' | 'INSERT_ROWS',
+    includeValuesInResponse?: boolean,
+    responseValueRenderOption?: 'FORMATTED_VALUE' | 'UNFORMATTED_VALUE' | 'FORMULA',
+    responseDateTimeRenderOption?: 'SERIAL_NUMBER' | 'FORMATTED_STRING',
+};
+
+export type SpreadsheetAppendRes = {
+    spreadsheetId: string,
+    tableRange: string,
+    updates: {
+        spreadsheetId: string,
+        updatedRange: string,
+        updatedRows: number,
+        updatedColumns: number,
+        updatedCells: number,
+        updatedData: ValueRange,
+    }
+};
 
 export class GoogleClient {
     public constructor(
@@ -107,6 +167,22 @@ export class GoogleClient {
         });
     }
 
+    private httpPatch<REQ>(
+        url: string,
+        body: REQ,
+        headers?: Record<string, string>,
+    ) {
+        return this.httpInvoke(url, {
+            method: "PATCH",
+            headers: {
+                ...(headers || {}),
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${this.session.accessToken}`,
+            },
+            body: JSON.stringify(body),
+        });
+    }
+
     public async listFiles(params?: ListFilesParams): Promise<ListFilesRes> {
         const queryStr = params
             ? '?' + new URLSearchParams({
@@ -126,6 +202,11 @@ export class GoogleClient {
         return await this.httpPost('https://www.googleapis.com/drive/v3/files', file);
     }
 
+    public async updateFile(fileId: string, file: UpdateFileDto, addParents?: string[]): Promise<FileResource> {
+        const queryStr = !addParents ? '' : '?' + new URLSearchParams({ addParents: addParents.join(',') });
+        return await this.httpPatch(`https://www.googleapis.com/drive/v3/files/${fileId}${queryStr}`, file);
+    }
+
     public async uploadFileContent(fileId: string, contentType: string, body: ReadableStream | XMLHttpRequestBodyInit): Promise<FileResource> {
         return await this.httpInvoke(`https://www.googleapis.com/upload/drive/v3/files/${fileId}`, {
             method: "PATCH",
@@ -143,5 +224,22 @@ export class GoogleClient {
                 'Authorization': `Bearer ${this.session.accessToken}`
             }
         }).then(res => res.text());
+    }
+
+    /****************/
+    /* SPREADSHEETS */
+    /****************/
+
+    public async spreadsheetCreate(spreadsheet: SpreadsheetCreateReq): Promise<SpreadsheetCreateRes> {
+        return await this.httpPost('https://sheets.googleapis.com/v4/spreadsheets', spreadsheet);
+    }
+
+    public async spreadsheetAppend(spreadsheetId: string, range: string, params: SpreadsheetAppendParams, values: ValueRange): Promise<SpreadsheetAppendRes> {
+        const serializedParams = Object.entries(params)
+            .map(([key, value]) => [`${key}`, `${value}`]);
+        return await this.httpPost(
+            `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?` + new URLSearchParams(serializedParams),
+            values,
+        );
     }
 }

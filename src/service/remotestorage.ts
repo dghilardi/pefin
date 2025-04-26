@@ -1,12 +1,12 @@
 import { Dayjs } from "dayjs";
-import { GoogleClient } from "../client/google";
+import { GoogleClient, SpreadsheetAppendParams } from "../client/google";
 import { AppConfig, defaultAppConfiguration, TransactionCategory } from "../core/config";
 import { stringify as tomlSerialize, parse as tomlDeserialize } from 'smol-toml';
 export class RemoteStorageInitializer {
     public readonly kind = 'remote-storage-initializer';
     public constructor(
         private client: GoogleClient
-    ) {}
+    ) { }
 
     public async initialize(): Promise<[RemoteStorageState, AppConfig]> {
         const listFilesRes = await this.client.listFiles({
@@ -36,7 +36,7 @@ export class RemoteStorageInitializer {
                 parent: rootFolderId,
                 mimeType: 'text/plain',
                 appProperties: { fileType: 'pefin.config' }
-            }            
+            }
         })
 
         let config;
@@ -66,12 +66,14 @@ export type RemoteStorageState = {
     spreadsheets: Record<string, string>
 }
 
+export const MONTHS_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
 export class RemoteStorageService {
     public readonly kind = 'remote-storage-service';
     public constructor(
         private client: GoogleClient,
         private state: RemoteStorageState,
-    ) {}
+    ) { }
 
     private async findFilesByYears(years: string[]): Promise<Record<string, string>> {
         let result = {};
@@ -90,12 +92,33 @@ export class RemoteStorageService {
                 if (listResult.files.length > 0) {
                     result = { ...result, [year]: listResult.files[0].id };
                 } else {
-                    const spreadSheetResource = await this.client.createFile({
+                    const createdSpreadsheet = await this.client.spreadsheetCreate({
+                        properties: { title: `Pefin ${year} report` },
+                        sheets: MONTHS_NAMES.map((month, monthIdx) => ({
+                            properties: { title: month, index: monthIdx },
+                            data: [{
+                                startRow: 0,
+                                startColumn: 0,
+                                rowData: [
+                                    {
+                                        values: [
+                                            { userEnteredValue: { stringValue: 'Date' } },
+                                            { userEnteredValue: { stringValue: 'Type' } },
+                                            { userEnteredValue: { stringValue: 'Group' } },
+                                            { userEnteredValue: { stringValue: 'Category' } },
+                                            { userEnteredValue: { stringValue: 'Notes' } },
+                                            { userEnteredValue: { stringValue: 'Amount' } },
+                                        ]
+                                    }
+                                ]
+                            }]
+                        }))
+                    });
+                    const spreadSheetResource = await this.client.updateFile(createdSpreadsheet.spreadsheetId, {
                         name: `${year}.xls`,
-                        parents: [this.state.rootFolderId],
                         mimeType: 'application/vnd.google-apps.spreadsheet',
                         appProperties: { year, fileType: 'pefin.movements' }
-                    });
+                    }, [this.state.rootFolderId]);
                     result = { ...result, [year]: spreadSheetResource.id };
                 }
             }
@@ -108,7 +131,12 @@ export class RemoteStorageService {
     }
 
     public async insertMovement(date: Dayjs, category: TransactionCategory, notes: string, amount: number) {
-        const sheets = await this.findFilesByYears([`${date.year()}`]);
-        console.log(`${sheets} -> row ${date};${category};${notes};${amount}`);
+        const year = `${date.year()}`;
+        const month = MONTHS_NAMES[date.month()];
+        const range = `${month}!A1:F1000`;
+        const sheets = await this.findFilesByYears([year]);
+        const params: SpreadsheetAppendParams = { insertDataOption: 'INSERT_ROWS', valueInputOption: 'RAW' };
+        const body = { range, values: [[date.format(), category.type, category.group, category.name, notes, amount]] };
+        await this.client.spreadsheetAppend(sheets[year], range, params, body);
     }
 }
