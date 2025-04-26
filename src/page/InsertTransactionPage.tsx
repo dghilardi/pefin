@@ -1,4 +1,4 @@
-import { Button, MenuItem, Select, Stack, TextField } from '@mui/material';
+import { Button, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, TextField } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
@@ -8,6 +8,7 @@ import { useFormik } from 'formik';
 import { useAtomValue } from 'jotai';
 import * as yup from 'yup';
 import { appConfigAtom } from '../atom/config';
+import { NumericFormat } from 'react-number-format';
 
 export const InsertTransactionPage = () => {
     const appConfig = useAtomValue(appConfigAtom);
@@ -25,7 +26,7 @@ export const InsertTransactionPage = () => {
         initialValues: {
             notes: '',
             category: '',
-            amount: 0,
+            amount: undefined,
             transactionDate: dayjs()
         },
         validationSchema,
@@ -34,28 +35,31 @@ export const InsertTransactionPage = () => {
         }
     });
 
-    return <form onSubmit={formik.handleSubmit} >
+    return <form style={{ height: 'calc(100% - 56px)' }} onSubmit={formik.handleSubmit}>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Stack spacing={2} width={"100%"} padding={2}>
+            <Stack spacing={2} width={"100%"} padding={2} alignContent="center" justifyContent="center" height="100%">
                 <DatePicker
                     name="transactionDate"
                     label="Transaction Date"
                     format='DD/MM/YYYY'
                     value={formik.values.transactionDate}
-                    onChange={formik.handleChange}
+                    onChange={(val) => formik.setFieldValue('transactionDate', val)}
                 />
-                <Select
-                    fullWidth
-                    label="Category"
-                    labelId="category"
-                    id="category"
-                    name="category"
-                    value={formik.values.category}
-                    onChange={formik.handleChange}
-                    error={formik.touched.category && Boolean(formik.errors.category)}
-                >
-                    {appConfig.categories.map(cat => <MenuItem key={cat.name} value={cat.name} >{cat.name}</MenuItem>)}
-                </Select>
+                <FormControl error={formik.touched.category && Boolean(formik.errors.category)}>
+                    <InputLabel id="category-label">Category</InputLabel>
+                    <Select
+                        fullWidth
+                        label="Category"
+                        labelId="category-label"
+                        id="category"
+                        name="category"
+                        value={formik.values.category}
+                        onChange={formik.handleChange}
+                    >
+                        {appConfig.categories.map(cat => <MenuItem key={cat.name} value={cat.name} >{cat.name}</MenuItem>)}
+                    </Select>
+                    <FormHelperText>{formik.touched.category && formik.errors.category}</FormHelperText>
+                </FormControl>
                 <TextField
                     fullWidth
                     id="notes"
@@ -67,18 +71,26 @@ export const InsertTransactionPage = () => {
                     error={formik.touched.notes && Boolean(formik.errors.notes)}
                     helperText={formik.touched.notes && formik.errors.notes}
                 />
-                <TextField
-                    fullWidth
-                    id="amount"
-                    name="amount"
-                    label="Amount"
-                    value={formik.values.amount}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    error={formik.touched.amount && Boolean(formik.errors.amount)}
-                    helperText={formik.touched.amount && formik.errors.amount}
-                />
-                <Button color="primary" variant="contained" fullWidth type="submit">
+                <FormControl>
+                    <NumericFormat
+                        id="amount"
+                        name="amount"
+                        label="Amount"
+                        error={formik.touched.amount && Boolean(formik.errors.amount)}
+                        onValueChange={({ floatValue }) => formik.setFieldValue('amount', floatValue)}
+                        onBlur={formik.handleBlur}
+                        thousandSeparator
+                        valueIsNumericString={false}
+                        prefix="€"
+                        allowLeadingZeros={false}
+                        allowNegative={false}
+                        fixedDecimalScale
+                        decimalScale={2}
+                        customInput={TextField}
+                    />
+                    <FormHelperText>{formik.touched.amount && formik.errors.amount}</FormHelperText>
+                </FormControl>
+                <Button color="primary" variant="contained" fullWidth type="submit" size="large" disabled={!(formik.isValid && formik.dirty)}>
                     Submit
                 </Button>
             </Stack>
