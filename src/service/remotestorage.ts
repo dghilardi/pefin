@@ -133,7 +133,7 @@ export class RemoteStorageService {
     public async insertMovement(date: Dayjs, category: TransactionCategory, notes: string, amount: number) {
         const year = `${date.year()}`;
         const month = MONTHS_NAMES[date.month()];
-        const range = `${month}!A1:F1000`;
+        const range = month;
         const sheets = await this.findFilesByYears([year]);
         const params: SpreadsheetAppendParams = { insertDataOption: 'INSERT_ROWS', valueInputOption: 'RAW' };
         const body = { range, values: [[date.format(), category.type, category.group, category.name, notes, amount]] };
