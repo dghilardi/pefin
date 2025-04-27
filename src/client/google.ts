@@ -111,6 +111,18 @@ export type SpreadsheetAppendRes = {
     }
 };
 
+export type SpreadsheetBatchReadParams = {
+    ranges: string[],
+    majorDimension: 'ROWS' | 'COLUMNS',
+    valueRenderOption?: 'FORMATTED_VALUE' | 'UNFORMATTED_VALUE' | 'FORMULA',
+    dateTimeRenderOption?: 'SERIAL_NUMBER' | 'FORMATTED_STRING',
+};
+
+export type SpreadsheetBatchReadRes = {
+    spreadsheetId: string,
+    valueRanges: ValueRange[],
+};
+
 export class GoogleClient {
     public constructor(
         private session: GoogleSession
@@ -241,5 +253,12 @@ export class GoogleClient {
             `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?` + new URLSearchParams(serializedParams),
             values,
         );
+    }
+
+    public async spreadsheetBatchRead(spreadsheetId: string, params: SpreadsheetBatchReadParams): Promise<SpreadsheetBatchReadRes> {
+        const serializedParams = Object.entries(params)
+            .filter(([key, value]) => !!key && !!value)
+            .flatMap(([key, value]) => typeof value === 'string' ? [[key, value]] : value.map(v => [key, v]));
+        return await this.httpGet(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?` + new URLSearchParams(serializedParams))
     }
 }

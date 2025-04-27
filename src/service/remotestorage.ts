@@ -1,4 +1,4 @@
-import { Dayjs } from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { GoogleClient, SpreadsheetAppendParams } from "../client/google";
 import { AppConfig, defaultAppConfiguration, TransactionCategory } from "../core/config";
 import { stringify as tomlSerialize, parse as tomlDeserialize } from 'smol-toml';
@@ -80,6 +80,12 @@ export type TransactionData = {
     type: 'expense' | 'income' | 'transfer',
     amount: number,
 };
+
+export type BatchReadResult = {
+    year: number,
+    month: number,
+    data: TransactionData[],
+}
 
 export class RemoteStorageService {
     public readonly kind = 'remote-storage-service';
@@ -182,5 +188,57 @@ export class RemoteStorageService {
                 await this.client.spreadsheetAppend(sheets[year], range, params, body);
             }
         }
+    }
+
+    public async batchReadMonths(ranges: { year: number, month: number }[]): Promise<BatchReadResult[]> {
+        const years = [...new Set(ranges.map(r => `${r.year}`))];
+        const sheets = await this.findFilesByYears(years);
+        let result: BatchReadResult[] = [];
+        for (const year of years) {
+            const sheet = sheets[year];
+            const months = ranges.filter(r => `${r.year}` === year).map(r => MONTHS_NAMES[r.month]);
+            const readRes = await this.client.spreadsheetBatchRead(sheet, {
+                ranges: months,
+                majorDimension: 'ROWS',
+                valueRenderOption: 'UNFORMATTED_VALUE',
+            });
+            const parsed = readRes.valueRanges.map((entry): BatchReadResult => {
+                const month = MONTHS_NAMES.findIndex(mname => mname === entry.range.split('!')[0]);
+                return {
+                    year: Number(year),
+                    month,
+                    data: entry.values
+                    .filter(row => 
+                        row.length >= 10 
+                        && (typeof row[0] === 'string' || typeof row[0] === 'number')
+                        && (['expense', 'income', 'transfer'].includes(row[1] as string))
+                        && typeof row[2] === 'string'
+                        && typeof row[3] === 'string'
+                        && typeof row[4] === 'string'
+                        && typeof row[5] === 'string'
+                        && typeof row[6] === 'string'
+                        && typeof row[7] === 'string'
+                        && typeof row[8] === 'string'
+                        && typeof row[9] === 'number'
+                    )
+                    .map((row): TransactionData => ({
+                        date: typeof row[0] === 'string' ? dayjs(row[0], 'YYYY-MM-DD') 
+                            : typeof row[0] === 'number' ? dayjs(new Date(1900, 0, 0)).add(Number(row['0']) - 1, 'day')
+                            : dayjs(new Date(1900, 0, 0)),
+                        type: row[1] as 'expense' | 'income' | 'transfer',
+                        sourceAccount: row[2] as string | undefined || '',
+                        destAccount: row[3] as string | undefined || '',
+                        group: row[4] as string | undefined || '',
+                        category: row[5] as string | undefined || '',
+                        notes: row[6] as string | undefined || '',
+                        details: row[7] as string | undefined || '',
+                        currency: row[8] as string | undefined || '',
+                        amount: row[9] as number | undefined || 0,
+                    }))
+                };
+            });
+            result = [...result, ...parsed];
+        }
+        return result;
     }
 }

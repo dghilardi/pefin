@@ -45,7 +45,7 @@ export const ImportTransactionsPage = () => {
                 return day > 0 && day < 200 * 365;
             })
             .map((row): TransactionData => ({
-                date: dayjs(new Date(1900, 0, 0)).add(Number(row['0']), 'day'),
+                date: dayjs(new Date(1900, 0, 0)).add(Number(row['0']) - 1, 'day'),
                 notes: row['1'],
                 details: row['2'],
                 sourceAccount: Number(row['7']) > 0 ? '' : row['3'],
