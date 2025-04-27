@@ -3370,6 +3370,11 @@ react-refresh@^0.17.0:
   resolved "https://registry.yarnpkg.com/react-refresh/-/react-refresh-0.17.0.tgz#b7e579c3657f23d04eccbe4ad2e58a8ed51e7e53"
   integrity sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==
 
+react-snap-carousel@^0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/react-snap-carousel/-/react-snap-carousel-0.5.1.tgz#7cc274796cf19f6217d3e4c8f001264c30171a48"
+  integrity sha512-t8FMtBUUIi65ie2B1ton1ew3LxONMNBeJXOZUCmg9lGZnT25H8vEj8Z0+UeWVmT9mgSdEKTnySWVWWeCzE90KA==
+
 react-transition-group@^4.4.5:
   version "4.4.5"
   resolved "https://registry.yarnpkg.com/react-transition-group/-/react-transition-group-4.4.5.tgz#e53d4e3f3344da8521489fbef8f2581d42becdd1"
