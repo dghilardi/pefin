@@ -154,13 +154,18 @@ export class RemoteStorageService {
     }
 
     public async insertMovement(date: Dayjs, category: TransactionCategory, notes: string, amount: number) {
-        const year = `${date.year()}`;
-        const month = MONTHS_NAMES[date.month()];
-        const range = month;
-        const sheets = await this.findFilesByYears([year]);
-        const params: SpreadsheetAppendParams = { insertDataOption: 'INSERT_ROWS', valueInputOption: 'RAW' };
-        const body = { range, values: [[date.format(), category.type, category.group, category.name, notes, amount]] };
-        await this.client.spreadsheetAppend(sheets[year], range, params, body);
+        await this.batchImportTransactions([{
+            date,
+            notes,
+            details: '',
+            sourceAccount: '',
+            destAccount: '',
+            group: category.group,
+            category: category.name,
+            currency: 'EUR',
+            type: category.type,
+            amount,
+        }]);
     }
 
     public async batchImportTransactions(transactions: TransactionData[]) {
