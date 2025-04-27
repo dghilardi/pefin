@@ -41,7 +41,7 @@ export const ViewTransactionsPage = () => {
             >
                 <ArrowCircleLeftRoundedIcon />
             </IconButton>
-            <Typography>{dayjs(new Date(monthlyTransactions[activePageIndex].year, monthlyTransactions[activePageIndex].month, 0)).format('YYYY MMM')}</Typography>
+            <Typography>{dayjs(new Date(monthlyTransactions[activePageIndex].year, monthlyTransactions[activePageIndex].month, 1)).format('YYYY MMM')}</Typography>
             <IconButton
                 disabled={!hasNextPage}
                 onClick={() => next()}
