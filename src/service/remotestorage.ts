@@ -68,6 +68,19 @@ export type RemoteStorageState = {
 
 export const MONTHS_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
+export type TransactionData = {
+    date: Dayjs,
+    notes: string,
+    details: string,
+    sourceAccount?: string,
+    destAccount?: string,
+    group?: string,
+    category: string,
+    currency: string,
+    type: 'expense' | 'income' | 'transfer',
+    amount: number,
+};
+
 export class RemoteStorageService {
     public readonly kind = 'remote-storage-service';
     public constructor(
@@ -104,9 +117,13 @@ export class RemoteStorageService {
                                         values: [
                                             { userEnteredValue: { stringValue: 'Date' } },
                                             { userEnteredValue: { stringValue: 'Type' } },
+                                            { userEnteredValue: { stringValue: 'Source Account' } },
+                                            { userEnteredValue: { stringValue: 'Destination Account' } },
                                             { userEnteredValue: { stringValue: 'Group' } },
                                             { userEnteredValue: { stringValue: 'Category' } },
                                             { userEnteredValue: { stringValue: 'Notes' } },
+                                            { userEnteredValue: { stringValue: 'Details' } },
+                                            { userEnteredValue: { stringValue: 'Currency' } },
                                             { userEnteredValue: { stringValue: 'Amount' } },
                                         ]
                                     }
@@ -138,5 +155,32 @@ export class RemoteStorageService {
         const params: SpreadsheetAppendParams = { insertDataOption: 'INSERT_ROWS', valueInputOption: 'RAW' };
         const body = { range, values: [[date.format(), category.type, category.group, category.name, notes, amount]] };
         await this.client.spreadsheetAppend(sheets[year], range, params, body);
+    }
+
+    public async batchImportTransactions(transactions: TransactionData[]) {
+        const years = [...new Set(transactions.map(t => `${t.date.year()}`))];
+        const sheets = await this.findFilesByYears(years);
+        for (const year of years) {
+            const yearTransactions = transactions.filter(t => `${t.date.year()}` === year);
+            const months = [...new Set(yearTransactions.map(t => t.date.month()))];
+            for (const month of months) {
+                const yearMonthTransactions = yearTransactions.filter(t => t.date.month() === month);
+                const range = MONTHS_NAMES[month];
+                const params: SpreadsheetAppendParams = { insertDataOption: 'INSERT_ROWS', valueInputOption: 'USER_ENTERED' };
+                const body = { range, values: yearMonthTransactions.map(t => [
+                    t.date.format('YYYY-MM-DD'), 
+                    t.type,
+                    t.sourceAccount || '',
+                    t.destAccount || '',
+                    t.group || '', 
+                    t.category, 
+                    t.notes, 
+                    t.details,
+                    t.currency,
+                    t.amount
+                ]) };
+                await this.client.spreadsheetAppend(sheets[year], range, params, body);
+            }
+        }
     }
 }

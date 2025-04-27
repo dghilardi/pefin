@@ -4,11 +4,39 @@ export type TransactionCategory = {
     type: 'expense' | 'income',
 };
 
+export type TransactionRewrite = {
+    query: {
+        category?: string,
+        notes?: string,
+        details?: string,
+        type?: string,
+    },
+    patch: {
+        notes?: string,
+        details?: string,
+        sourceAccount?: string,
+        destAccount?: string,
+        group?: string,
+        category?: string,
+        type?: string,
+    },
+}
+
+export type ImportConfig = {
+    rewrites: TransactionRewrite[],
+}
+
 export type AppConfig = {
+    experimentalFeatures: boolean,
+    import: ImportConfig,
     categories: TransactionCategory[],
 }
 
 export const defaultAppConfiguration = (): AppConfig => ({
+    experimentalFeatures: false,
+    import: {
+        rewrites: [],
+    },
     categories: [
         { name: 'Home', group: 'Necessities', type: 'expense' },
         { name: 'Shopping', group: 'Necessities', type: 'expense' },

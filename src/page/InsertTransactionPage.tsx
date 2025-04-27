@@ -61,7 +61,6 @@ export const InsertTransactionPage = () => {
     });
 
     const handleSnackbarClose = () => setSnackbarState({ open: false, message: '', severity: 'success' });
-
     return <>
         <Snackbar
             open={snackbarState.open}
@@ -131,12 +130,12 @@ export const InsertTransactionPage = () => {
                         />
                         <FormHelperText>{formik.touched.amount && formik.errors.amount}</FormHelperText>
                     </FormControl>
-                    <Button 
-                        color="primary" 
-                        variant="contained" 
-                        fullWidth 
-                        type="submit" 
-                        size="large" 
+                    <Button
+                        color="primary"
+                        variant="contained"
+                        fullWidth
+                        type="submit"
+                        size="large"
                         loading={submittingTransaction}
                         disabled={!(formik.isValid && formik.dirty)}
                     >

@@ -4,17 +4,19 @@ import { Alert, BottomNavigation, BottomNavigationAction, Box, CircularProgress,
 import EditIcon from '@mui/icons-material/Edit';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import { useAtomValue, useSetAtom } from 'jotai';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { storageServiceAtom, storageStateAtom } from './atom/storage';
 import { appConfigAtom } from './atom/config';
 import { InsertTransactionPage } from './page/InsertTransactionPage';
 import { InsightsPage } from './page/InsigthsPage';
 import { ViewTransactionsPage } from './page/ViewTransactionsPage';
+import { ImportTransactionsPage } from './page/ImportTransactionsPage';
 
 function App() {
   const remoteStorageService = useAtomValue(storageServiceAtom);
   const setRemoteStorageState = useSetAtom(storageStateAtom);
-  const setAppConfig = useSetAtom(appConfigAtom);
+  const [appConfig, setAppConfig] = useAtom(appConfigAtom);
   const [value, setValue] = useState(0);
 
   useEffect(() => {
@@ -43,19 +45,21 @@ function App() {
             setValue(newValue);
           }}
         >
-          <BottomNavigationAction label="Insert" icon={<EditIcon />} />
-          <BottomNavigationAction label="Report" icon={<LibraryBooksIcon />} />
-          <BottomNavigationAction label="Insights" icon={<ShowChartIcon />} />
+          <BottomNavigationAction label="Insert" value={0} icon={<EditIcon />} />
+          {appConfig.experimentalFeatures ? <BottomNavigationAction label="Import" value={1} icon={<FileUploadOutlinedIcon />} /> : null}
+          <BottomNavigationAction label="Report" value={2} icon={<LibraryBooksIcon />} />
+          <BottomNavigationAction label="Insights" value={3} icon={<ShowChartIcon />} />
         </BottomNavigation>
       </Paper>
     </Box>
   );
 }
 
-const PageRouter = (p: { pageIdx: number }) => 
+const PageRouter = (p: { pageIdx: number }) =>
   p.pageIdx === 0 ? <InsertTransactionPage />
-  : p.pageIdx === 1 ? <ViewTransactionsPage />
-  : p.pageIdx === 2 ? <InsightsPage />
-  : null;
+    : p.pageIdx === 1 ? <ImportTransactionsPage />
+      : p.pageIdx === 2 ? <ViewTransactionsPage />
+        : p.pageIdx === 3 ? <InsightsPage />
+          : null;
 
 export default App
