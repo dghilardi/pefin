@@ -7,6 +7,7 @@ import { storageServiceAtom } from "../atom/storage";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { BatchReadResult } from "../service/remotestorage";
+import { PieChart } from '@mui/x-charts/PieChart';
 
 export const ViewTransactionsPage = () => {
     const remoteStorageSvc = useAtomValue(storageServiceAtom);
@@ -18,10 +19,10 @@ export const ViewTransactionsPage = () => {
         const lastLoadedMonth = {
             year: monthlyTransactions.length > 0 ? monthlyTransactions[monthlyTransactions.length - 1].year
                 : now.month() < 11 ? now.year()
-                : now.year() + 1,
+                    : now.year() + 1,
             month: monthlyTransactions.length > 0 ? monthlyTransactions[monthlyTransactions.length - 1].month
                 : now.month() < 11 ? now.month() + 1
-                : 0,
+                    : 0,
 
         };
         if (remoteStorageSvc && remoteStorageSvc.kind === 'remote-storage-service' && !pendingRequest && activePageIndex + 3 > monthlyTransactions.length) {
@@ -95,6 +96,27 @@ export const Carousel = (p: {
     scrollRef: (el: HTMLElement | null) => void,
     snapPointIndexes: Set<number>,
 }) => {
+    const aggregatedTransactions = p.monthlyTransactions.map(mt => Object.entries(mt.data
+        .filter(transaction => transaction.type === 'expense')
+        .reduce((acc, next) => {
+        const lvl1key = next.group || 'other';
+        const lvl2key = next.category || 'other';
+        if (acc[lvl1key]) {
+            acc[lvl1key].sum += next.amount;
+            if (acc[lvl1key].sub[lvl2key]) {
+                acc[lvl1key].sub[lvl2key] += next.amount;
+            } else {
+                acc[lvl1key].sub[lvl2key] = next.amount;
+            }
+        } else {
+            acc[lvl1key] = { sum: next.amount, sub: { [lvl2key]: next.amount }};
+        }
+        return acc;
+    }, {} as Record<string, { sum: number, sub: Record<string, number>}>))
+        .map(([lvl1, values]) => ({ name: lvl1, amount: values.sum, sub: Object.entries(values.sub).map(([lvl2, amount]) => ({ name: lvl2, amount }))})));
+    
+    aggregatedTransactions.forEach(mon => mon.sort((a, b) => b.amount - a.amount));
+    aggregatedTransactions.forEach(mon => mon.forEach(grp => grp.sub.sort((a, b) => b.amount - a.amount)));
     return (
         <>
             <Stack
@@ -123,11 +145,22 @@ export const Carousel = (p: {
                             alignItems: 'center',
                         }}
                     >
-                        <img
-                            src={`https://picsum.photos/500?${i}`}
-                            width="250"
-                            height="250"
-                            alt={`Item ${i}`}
+                        <PieChart
+                            series={[
+                                {
+                                    innerRadius: 0,
+                                    outerRadius: 60,
+                                    data: aggregatedTransactions[i].map((grp, idx) => ({ label: grp.name, value: grp.amount, color: HSVtoRGB(idx/aggregatedTransactions[i].length, 0.9, 0.9) })),
+                                },
+                                {
+                                    innerRadius: 60,
+                                    outerRadius: 110,
+                                    data: aggregatedTransactions[i]
+                                        .flatMap((grp, idx) => grp.sub.map((sub, subidx) => ({ _label: sub.name, value: sub.amount, color: HSVtoRGB(idx/aggregatedTransactions[i].length, 0.4 + 0.6 * (subidx / grp.sub.length), 0.9) }))),
+                                },
+                            ]}
+                            width={250}
+                            height={250}
                         />
                     </Box>
                 ))}
@@ -135,3 +168,22 @@ export const Carousel = (p: {
         </>
     );
 };
+
+function HSVtoRGB(h: number, s: number, v: number) {
+    let r = 0, g = 0, b = 0;
+    const i = Math.floor(h * 6);
+    const f = h * 6 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    const result = `#${Math.round(r * 255).toString(16)}${Math.round(g * 255).toString(16)}${Math.round(b * 255).toString(16)}`;
+    return result;
+}
