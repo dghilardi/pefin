@@ -11,21 +11,34 @@ import { BatchReadResult } from "../service/remotestorage";
 export const ViewTransactionsPage = () => {
     const remoteStorageSvc = useAtomValue(storageServiceAtom);
     const [monthlyTransactions, setMonthlyTransactions] = useState<BatchReadResult[]>([]);
-    const { scrollRef, snapPointIndexes, next, prev, hasPrevPage, hasNextPage, activePageIndex } = useSnapCarousel();
+    const [pendingRequest, setPendingRequest] = useState(false);
+    const { scrollRef, snapPointIndexes, next, prev, hasPrevPage, hasNextPage, activePageIndex, refresh } = useSnapCarousel();
     useEffect(() => {
-        if (remoteStorageSvc && remoteStorageSvc.kind === 'remote-storage-service') {
-            const now = dayjs();
+        const now = dayjs();
+        const lastLoadedMonth = {
+            year: monthlyTransactions.length > 0 ? monthlyTransactions[monthlyTransactions.length - 1].year
+                : now.month() < 11 ? now.year()
+                : now.year() + 1,
+            month: monthlyTransactions.length > 0 ? monthlyTransactions[monthlyTransactions.length - 1].month
+                : now.month() < 11 ? now.month() + 1
+                : 0,
+
+        };
+        if (remoteStorageSvc && remoteStorageSvc.kind === 'remote-storage-service' && !pendingRequest && activePageIndex + 3 > monthlyTransactions.length) {
+            setPendingRequest(true);
             const query = Array.from({ length: 3 }).map((_, idx) => ({
-                year: now.month() - idx < 0 ? now.year() - 1 : now.year(),
-                month: now.month() - idx < 0 ? now.month() - idx + 12 : now.month() - idx,
+                year: lastLoadedMonth.month - 1 - idx < 0 ? lastLoadedMonth.year - 1 : lastLoadedMonth.year,
+                month: lastLoadedMonth.month - 1 - idx < 0 ? lastLoadedMonth.month - 1 - idx + 12 : lastLoadedMonth.month - 1 - idx,
             }));
             remoteStorageSvc.batchReadMonths(query)
                 .then(res => {
                     res.sort((a, b) => a.year === b.year ? b.month - a.month : b.year - a.year);
-                    setMonthlyTransactions(res);
-                });
+                    setMonthlyTransactions([...monthlyTransactions, ...res]);
+                })
+                .finally(() => setPendingRequest(false));
         }
-    }, [remoteStorageSvc]);
+    }, [remoteStorageSvc, pendingRequest, activePageIndex]);
+    useEffect(refresh, [monthlyTransactions]);
     if (!remoteStorageSvc || remoteStorageSvc.kind !== 'remote-storage-service') {
         return <Alert>Remote service not initialized</Alert>;
     }
