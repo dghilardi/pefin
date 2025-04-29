@@ -95,7 +95,7 @@ export const InsertTransactionPage = () => {
                             value={formik.values.category}
                             onChange={formik.handleChange}
                         >
-                            {appConfig.categories.map((cat, idx) => <MenuItem key={cat.name} value={`${idx}`} >{cat.name}</MenuItem>)}
+                            {appConfig.categories.map((cat, idx) => ({ cat, idx })).filter(({ cat }) => !cat.readonly).map(({cat, idx}) => <MenuItem key={idx} value={`${idx}`} >{`${cat.group} - ${cat.name}`}</MenuItem>)}
                         </Select>
                         <FormHelperText>{formik.touched.category && formik.errors.category}</FormHelperText>
                     </FormControl>
