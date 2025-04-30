@@ -34,6 +34,7 @@ export const ViewTransactionsPage = () => {
             remoteStorageSvc.batchReadMonths(query)
                 .then(res => {
                     res.sort((a, b) => a.year === b.year ? b.month - a.month : b.year - a.year);
+                    res.forEach(monthReport => monthReport.data.sort((a, b) => b.date.diff(a.date, 'days')));
                     setMonthlyTransactions([...monthlyTransactions, ...res]);
                 })
                 .finally(() => setPendingRequest(false));
