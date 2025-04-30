@@ -87,6 +87,20 @@ export type BatchReadResult = {
     data: TransactionData[],
 }
 
+const TRANSACTION_PAGE_HEADERS = {
+    DATE: 'Date',
+    TYPE: 'Type',
+    SOURCE_ACCOUNT: 'Source Account',
+    DESTINATION_ACCOUNT: 'Destination Account',
+    GROUP: 'Group',
+    CATEGORY: 'Category',
+    NOTES: 'Notes',
+    DETAILS: 'Details',
+    CURRENCY: 'Currency',
+    AMOUNT: 'Amount',
+    TRANSACTION_ID: 'Transaction id',
+};
+
 export class RemoteStorageService {
     public readonly kind = 'remote-storage-service';
     public constructor(
@@ -121,16 +135,17 @@ export class RemoteStorageService {
                                 rowData: [
                                     {
                                         values: [
-                                            { userEnteredValue: { stringValue: 'Date' } },
-                                            { userEnteredValue: { stringValue: 'Type' } },
-                                            { userEnteredValue: { stringValue: 'Source Account' } },
-                                            { userEnteredValue: { stringValue: 'Destination Account' } },
-                                            { userEnteredValue: { stringValue: 'Group' } },
-                                            { userEnteredValue: { stringValue: 'Category' } },
-                                            { userEnteredValue: { stringValue: 'Notes' } },
-                                            { userEnteredValue: { stringValue: 'Details' } },
-                                            { userEnteredValue: { stringValue: 'Currency' } },
-                                            { userEnteredValue: { stringValue: 'Amount' } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.DATE } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.TYPE } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.SOURCE_ACCOUNT } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.DESTINATION_ACCOUNT } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.GROUP } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.CATEGORY } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.NOTES } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.DETAILS } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.CURRENCY } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.AMOUNT } },
+                                            { userEnteredValue: { stringValue: TRANSACTION_PAGE_HEADERS.TRANSACTION_ID } },
                                         ]
                                     }
                                 ]
@@ -188,7 +203,8 @@ export class RemoteStorageService {
                     t.notes, 
                     t.details,
                     t.currency,
-                    t.amount
+                    t.amount,
+                    `${t.date.diff(dayjs('1900-01-01'), 'days').toString(16).padStart(6, '0').toUpperCase()}-${Math.floor(t.amount*100).toString(16).padStart(6,'0').toUpperCase()}-0000`
                 ]) };
                 await this.client.spreadsheetAppend(sheets[year], range, params, body);
             }
