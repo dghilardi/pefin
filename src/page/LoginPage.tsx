@@ -3,6 +3,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { useSetAtom } from "jotai";
 import { useState } from "react";
 import { googleSessionAtom } from "../atom/googlesession";
+import { LoginResp } from "../client/google";
 
 function GoogleIcon() {
     return (
