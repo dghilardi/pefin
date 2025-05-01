@@ -128,7 +128,61 @@ export class RemoteStorageService {
                     const createdSpreadsheet = await this.client.spreadsheetCreate({
                         properties: { title: `Pefin ${year} report` },
                         sheets: MONTHS_NAMES.map((month, monthIdx) => ({
-                            properties: { title: month, index: monthIdx },
+                            properties: {
+                                sheetId: monthIdx,
+                                title: month,
+                                index: monthIdx,
+                                gridProperties: {
+                                    rowCount: 1000,
+                                    columnCount: 11,
+                                    frozenRowCount: 1
+                                }
+                            },
+                            basicFilter: {
+                                range: {
+                                    sheetId: monthIdx,
+                                    startRowIndex: 0,
+                                    endRowIndex: 1000,
+                                    startColumnIndex: 0,
+                                    endColumnIndex: 11,
+                                },
+                            },
+                            conditionalFormats: [
+                                {
+                                    ranges: [
+                                        {
+                                            sheetId: monthIdx,
+                                            startRowIndex: 0,
+                                            endRowIndex: 1000,
+                                            startColumnIndex: 10,
+                                            endColumnIndex: 11
+                                        }
+                                    ],
+                                    booleanRule: {
+                                        condition: {
+                                            type: "CUSTOM_FORMULA",
+                                            values: [
+                                                {
+                                                    userEnteredValue: "=COUNTIF(K:K;K1)\u003e1"
+                                                }
+                                            ]
+                                        },
+                                        format: {
+                                            backgroundColor: {
+                                                red: 0.95686275,
+                                                green: 0.78039217,
+                                                blue: 0.7647059
+                                            },
+                                            backgroundColorStyle: {
+                                                rgbColor: {
+                                                    red: 0.95686275,
+                                                    green: 0.78039217,
+                                                    blue: 0.7647059
+                                                }
+                                            }
+                                        }
+                                    }
+                                }],
                             data: [{
                                 startRow: 0,
                                 startColumn: 0,
@@ -193,19 +247,21 @@ export class RemoteStorageService {
                 const yearMonthTransactions = yearTransactions.filter(t => t.date.month() === month);
                 const range = MONTHS_NAMES[month];
                 const params: SpreadsheetAppendParams = { insertDataOption: 'INSERT_ROWS', valueInputOption: 'USER_ENTERED' };
-                const body = { range, values: yearMonthTransactions.map(t => [
-                    t.date.format('YYYY-MM-DD'), 
-                    t.type,
-                    t.sourceAccount || '',
-                    t.destAccount || '',
-                    t.group || '', 
-                    t.category, 
-                    t.notes, 
-                    t.details,
-                    t.currency,
-                    t.amount,
-                    `${t.date.diff(dayjs('1900-01-01'), 'days').toString(16).padStart(6, '0').toUpperCase()}-${Math.floor(t.amount*100).toString(16).padStart(6,'0').toUpperCase()}-0000`
-                ]) };
+                const body = {
+                    range, values: yearMonthTransactions.map(t => [
+                        t.date.format('YYYY-MM-DD'),
+                        t.type,
+                        t.sourceAccount || '',
+                        t.destAccount || '',
+                        t.group || '',
+                        t.category,
+                        t.notes,
+                        t.details,
+                        t.currency,
+                        t.amount,
+                        `${t.date.diff(dayjs('1900-01-01'), 'days').toString(16).padStart(6, '0').toUpperCase()}-${Math.floor(t.amount * 100).toString(16).padStart(6, '0').toUpperCase()}-0000`
+                    ])
+                };
                 await this.client.spreadsheetAppend(sheets[year], range, params, body);
             }
         }
@@ -229,33 +285,33 @@ export class RemoteStorageService {
                     year: Number(year),
                     month,
                     data: entry.values
-                    .filter(row => 
-                        row.length >= 10 
-                        && (typeof row[0] === 'string' || typeof row[0] === 'number')
-                        && (['expense', 'income', 'transfer'].includes(row[1] as string))
-                        && typeof row[2] === 'string'
-                        && typeof row[3] === 'string'
-                        && typeof row[4] === 'string'
-                        && typeof row[5] === 'string'
-                        && typeof row[6] === 'string'
-                        && typeof row[7] === 'string'
-                        && typeof row[8] === 'string'
-                        && typeof row[9] === 'number'
-                    )
-                    .map((row): TransactionData => ({
-                        date: typeof row[0] === 'string' ? dayjs(row[0], 'YYYY-MM-DD') 
-                            : typeof row[0] === 'number' ? dayjs(new Date(1900, 0, 0)).add(Number(row['0']) - 1, 'day')
-                            : dayjs(new Date(1900, 0, 0)),
-                        type: row[1] as 'expense' | 'income' | 'transfer',
-                        sourceAccount: row[2] as string | undefined || '',
-                        destAccount: row[3] as string | undefined || '',
-                        group: row[4] as string | undefined || '',
-                        category: row[5] as string | undefined || '',
-                        notes: row[6] as string | undefined || '',
-                        details: row[7] as string | undefined || '',
-                        currency: row[8] as string | undefined || '',
-                        amount: row[9] as number | undefined || 0,
-                    }))
+                        .filter(row =>
+                            row.length >= 10
+                            && (typeof row[0] === 'string' || typeof row[0] === 'number')
+                            && (['expense', 'income', 'transfer'].includes(row[1] as string))
+                            && typeof row[2] === 'string'
+                            && typeof row[3] === 'string'
+                            && typeof row[4] === 'string'
+                            && typeof row[5] === 'string'
+                            && typeof row[6] === 'string'
+                            && typeof row[7] === 'string'
+                            && typeof row[8] === 'string'
+                            && typeof row[9] === 'number'
+                        )
+                        .map((row): TransactionData => ({
+                            date: typeof row[0] === 'string' ? dayjs(row[0], 'YYYY-MM-DD')
+                                : typeof row[0] === 'number' ? dayjs(new Date(1900, 0, 0)).add(Number(row['0']) - 1, 'day')
+                                    : dayjs(new Date(1900, 0, 0)),
+                            type: row[1] as 'expense' | 'income' | 'transfer',
+                            sourceAccount: row[2] as string | undefined || '',
+                            destAccount: row[3] as string | undefined || '',
+                            group: row[4] as string | undefined || '',
+                            category: row[5] as string | undefined || '',
+                            notes: row[6] as string | undefined || '',
+                            details: row[7] as string | undefined || '',
+                            currency: row[8] as string | undefined || '',
+                            amount: row[9] as number | undefined || 0,
+                        }))
                 };
             });
             result = [...result, ...parsed];
