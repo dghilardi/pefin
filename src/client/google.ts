@@ -164,6 +164,13 @@ export type SpreadsheetBatchReadRes = {
     valueRanges: ValueRange[],
 };
 
+export type LoginResp = {
+    access_token: string,
+    expires_in: number,
+    message: string,
+    warning?: string,
+}
+
 const jotaiStore = getDefaultStore();
 
 export class GoogleClient {
@@ -171,33 +178,61 @@ export class GoogleClient {
         private session: GoogleSession
     ) { }
 
-    private httpInvokeRaw(
+    private async httpInvokeRaw(
         input: URL | Request | string,
         init?: RequestInit,
     ) {
         const headers = {
             ...(init?.headers || {}),
-            'Authorization': `Bearer ${this.session.accessToken}` 
+            'Authorization': `Bearer ${this.session.accessToken}`
         };
         const fetchInit = init ? { ...init, headers } : { headers };
-        return fetch(input, fetchInit)
-            .then(async (res) => {
-                if (res.status === 401) {
-                    jotaiStore.set(googleSessionAtom, undefined);
-                } else if (res.status >= 400) {
-                    const resBody = await res.text();
-                    console.error(
-                        `${input} :: bad response status code ${res.status} - ${resBody}`,
-                    );
-                    const context = resBody.startsWith("{") ? JSON.parse(resBody) : resBody;
+        const res = await fetch(input, fetchInit);
+        if (res.status === 401) {
+            const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+            if (refreshResponse.ok) {
+                const parsedRefreshResponse: LoginResp = await refreshResponse.json();
+                this.session.accessToken = parsedRefreshResponse.access_token;
+                jotaiStore.set(googleSessionAtom, { accessToken: parsedRefreshResponse.access_token });
+                const newTokenInit = {
+                    ...(init || {}),
+                    headers: {
+                        ...(init?.headers || {}),
+                        'Authorization': `Bearer ${this.session.accessToken}`
+                    }
+                };
+                return fetch(input, newTokenInit).then(async res => {
+                    if (res.status >= 400) {
+                        const resBody = await res.text();
+                        console.error(
+                            `${input} :: bad response status code ${res.status} - ${resBody}`,
+                        );
+                        const context = resBody.startsWith("{") ? JSON.parse(resBody) : resBody;
+            
+                        throw new BaseError(
+                            `bad response status code ${res.status} - ${resBody}`,
+                            { context },
+                        );
+                    }
+                    return res;
+                });
+            } else {
+                jotaiStore.set(googleSessionAtom, undefined);
+                throw new BaseError(`bad response status code ${res.status}`);
+            }
+        } else if (res.status >= 400) {
+            const resBody = await res.text();
+            console.error(
+                `${input} :: bad response status code ${res.status} - ${resBody}`,
+            );
+            const context = resBody.startsWith("{") ? JSON.parse(resBody) : resBody;
 
-                    throw new BaseError(
-                        `bad response status code ${res.status} - ${resBody}`,
-                        { context },
-                    );
-                }
-                return res;
-            })
+            throw new BaseError(
+                `bad response status code ${res.status} - ${resBody}`,
+                { context },
+            );
+        }
+        return res;
     }
 
     private httpInvoke(

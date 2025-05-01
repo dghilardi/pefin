@@ -35,9 +35,14 @@ export const LoginPage = () => {
     const setGoogleSession = useSetAtom(googleSessionAtom);
     const handleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
-            setLoading(false);
-            const session = { accessToken: tokenResponse.access_token };
-            setGoogleSession(session);
+            try {
+                const loginResp: LoginResp = await fetch('/api/auth/login?' + new URLSearchParams({ code: tokenResponse.code }))
+                    .then(res => res.json());
+                const session = { accessToken: loginResp.access_token };
+                setGoogleSession(session);
+            } finally {
+                setLoading(false);
+            }
         },
         onError: (errorResponse) => {
             setLoading(false);
@@ -47,7 +52,7 @@ export const LoginPage = () => {
             setLoading(false);
             setLoginError(error.type);
         },
-        
+        flow: 'auth-code',
         scope: ['https://www.googleapis.com/auth/drive.file'].join(' '),
     });
     return <Box
