@@ -1,4 +1,5 @@
-import { GoogleSession } from "../atom/googlesession";
+import { getDefaultStore } from "jotai";
+import { GoogleSession, googleSessionAtom } from "../atom/googlesession";
 
 type Jsonable =
     | string
@@ -52,6 +53,37 @@ export type UpdateFileDto = Omit<FileResource, 'id' | 'name' | 'parents'> & { na
 
 export type ListFilesRes = { files: FileResource[] };
 
+export type ConditionalFormat = {
+    ranges: {
+        sheetId: number,
+        startRowIndex: number,
+        endRowIndex: number,
+        startColumnIndex: number,
+        endColumnIndex: number,
+    }[],
+    booleanRule?: {
+        condition: {
+            type: 'CUSTOM_FORMULA',
+            values: { userEnteredValue: string }[],
+        },
+        format: {
+            backgroundColor: {
+                red: number,
+                green: number,
+                blue: number,
+            },
+            backgroundColorStyle: {
+                rgbColor: {
+                    red: number,
+                    green: number,
+                    blue: number,
+                }
+            }
+        },
+    },
+    gradientRule?: {},
+};
+
 export type Spreadsheet = {
     spreadsheetId: string,
     properties: {
@@ -62,6 +94,15 @@ export type Spreadsheet = {
             index: number,
             title: string,
         },
+        basicFilter?: {
+            range: {
+                startRowIndex: number,
+                endRowIndex: number,
+                startColumnIndex: number,
+                endColumnIndex: number,
+            },
+        },
+        conditionalFormats?: ConditionalFormat[],
         data: {
             startRow: number,
             startColumn: number,
@@ -123,18 +164,27 @@ export type SpreadsheetBatchReadRes = {
     valueRanges: ValueRange[],
 };
 
+const jotaiStore = getDefaultStore();
+
 export class GoogleClient {
     public constructor(
         private session: GoogleSession
     ) { }
 
-    private httpInvoke(
+    private httpInvokeRaw(
         input: URL | Request | string,
         init?: RequestInit,
     ) {
-        return fetch(input, init)
+        const headers = {
+            ...(init?.headers || {}),
+            'Authorization': `Bearer ${this.session.accessToken}` 
+        };
+        const fetchInit = init ? { ...init, headers } : { headers };
+        return fetch(input, fetchInit)
             .then(async (res) => {
-                if (res.status >= 400) {
+                if (res.status === 401) {
+                    jotaiStore.set(googleSessionAtom, undefined);
+                } else if (res.status >= 400) {
                     const resBody = await res.text();
                     console.error(
                         `${input} :: bad response status code ${res.status} - ${resBody}`,
@@ -146,6 +196,16 @@ export class GoogleClient {
                         { context },
                     );
                 }
+                return res;
+            })
+    }
+
+    private httpInvoke(
+        input: URL | Request | string,
+        init?: RequestInit,
+    ) {
+        return this.httpInvokeRaw(input, init)
+            .then(async (res) => {
                 return await res.json();
             });
     }
@@ -156,10 +216,7 @@ export class GoogleClient {
     ) {
         return this.httpInvoke(url, {
             method: "GET",
-            headers: {
-                ...(headers || {}),
-                "Authorization": `Bearer ${this.session.accessToken}`,
-            },
+            headers
         });
     }
 
@@ -173,7 +230,6 @@ export class GoogleClient {
             headers: {
                 ...(headers || {}),
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.session.accessToken}`,
             },
             body: JSON.stringify(body),
         });
@@ -189,7 +245,6 @@ export class GoogleClient {
             headers: {
                 ...(headers || {}),
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.session.accessToken}`,
             },
             body: JSON.stringify(body),
         });
@@ -224,18 +279,13 @@ export class GoogleClient {
             method: "PATCH",
             headers: {
                 "Content-Type": contentType,
-                "Authorization": `Bearer ${this.session.accessToken}`,
             },
             body,
         });
     }
 
     public async downloadTextFile(fileId: string): Promise<string> {
-        return fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-            headers: {
-                'Authorization': `Bearer ${this.session.accessToken}`
-            }
-        }).then(res => res.text());
+        return this.httpInvokeRaw(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`).then(res => res.text());
     }
 
     /****************/
