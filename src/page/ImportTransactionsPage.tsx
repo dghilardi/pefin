@@ -12,7 +12,7 @@ import NumberParser from 'intl-number-parser';
 const parseNumber = NumberParser('it-IT');
 
 export const ImportTransactionsPage = () => {
-    const appConfig = useAtomValue(appConfigAtom);
+    const { conf: appConfig } = useAtomValue(appConfigAtom);
     const remoteStorageSvc = useAtomValue(storageServiceAtom);
     if (!remoteStorageSvc || remoteStorageSvc.kind !== 'remote-storage-service') {
         return <Alert>Remote service not initialized</Alert>;

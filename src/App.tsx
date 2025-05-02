@@ -21,7 +21,7 @@ function App() {
 
   useEffect(() => {
     if (remoteStorageService && remoteStorageService.kind === 'remote-storage-initializer') {
-      remoteStorageService.initialize().then(([state, config]) => {
+      remoteStorageService.initialize(appConfig).then(([state, config]) => {
         setRemoteStorageState(state);
         setAppConfig(config);
       });
@@ -46,7 +46,7 @@ function App() {
           }}
         >
           <BottomNavigationAction label="Insert" value={0} icon={<EditIcon />} />
-          {appConfig.experimentalFeatures ? <BottomNavigationAction label="Import" value={1} icon={<FileUploadOutlinedIcon />} /> : null}
+          {appConfig.conf.experimentalFeatures ? <BottomNavigationAction label="Import" value={1} icon={<FileUploadOutlinedIcon />} /> : null}
           <BottomNavigationAction label="Report" value={2} icon={<LibraryBooksIcon />} />
           <BottomNavigationAction label="Insights" value={3} icon={<ShowChartIcon />} />
         </BottomNavigation>

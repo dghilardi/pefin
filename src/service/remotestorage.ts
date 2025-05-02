@@ -2,13 +2,27 @@ import dayjs, { Dayjs } from "dayjs";
 import { GoogleClient, SpreadsheetAppendParams } from "../client/google";
 import { AppConfig, defaultAppConfiguration, TransactionCategory } from "../core/config";
 import { stringify as tomlSerialize, parse as tomlDeserialize } from 'smol-toml';
+import { ConfigData } from "../atom/config";
 export class RemoteStorageInitializer {
     public readonly kind = 'remote-storage-initializer';
     public constructor(
         private client: GoogleClient
     ) { }
 
-    public async initialize(): Promise<[RemoteStorageState, AppConfig]> {
+    public async initialize(localConfigData: ConfigData): Promise<[RemoteStorageState, ConfigData]> {
+        if (localConfigData.file) {
+            try {
+                const fileData = await this.client.readFile(localConfigData.file.fileId, { fields: ['modifiedTime', 'parents', 'id']});
+                if (fileData.modifiedTime === localConfigData.file.lastModified) {
+                    return [{
+                        rootFolderId: fileData.parents && fileData.parents.length > 0 ? fileData.parents[0] : 'root',
+                        spreadsheets: {},
+                    }, localConfigData];
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
         const listFilesRes = await this.client.listFiles({
             orderBy: [{ f: 'createdTime', o: 'desc' }],
             query: {
@@ -40,9 +54,14 @@ export class RemoteStorageInitializer {
         })
 
         let config;
+        let fileResource;
         if (confFiles.files.length > 0) {
-            const configStr = await this.client.downloadTextFile(confFiles.files[0].id);
+            const [configStr, fileData] = await Promise.all([
+                this.client.downloadTextFile(confFiles.files[0].id),
+                this.client.readFile(confFiles.files[0].id, { fields: ['modifiedTime', 'parents', 'id']}),
+            ]);
             config = tomlDeserialize(configStr) as AppConfig;
+            fileResource = fileData;
         } else {
             config = defaultAppConfiguration();
             const createdFile = await this.client.createFile({
@@ -51,13 +70,19 @@ export class RemoteStorageInitializer {
                 mimeType: 'text/plain',
                 appProperties: { fileType: 'pefin.config' }
             });
-            await this.client.uploadFileContent(createdFile.id, 'text/plain', tomlSerialize(config));
+            fileResource = await this.client.uploadFileContent(createdFile.id, 'text/plain', tomlSerialize(config), { fields: ['modifiedTime', 'parents', 'id']});
         }
 
         return [{
             rootFolderId,
             spreadsheets: {},
-        }, config]
+        }, {
+            file: {
+                fileId: fileResource.id,
+                lastModified: fileResource.modifiedTime,
+            },
+            conf: config,
+        }]
     }
 }
 

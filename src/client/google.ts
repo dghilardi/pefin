@@ -45,11 +45,12 @@ export type FileResource = {
     name: string,
     parents?: string[],
     mimeType?: string,
+    modifiedTime: string,
     appProperties?: Record<string, string>
 };
 
-export type CreateFileDto = Omit<FileResource, 'id'>
-export type UpdateFileDto = Omit<FileResource, 'id' | 'name' | 'parents'> & { name?: string }
+export type CreateFileDto = Omit<FileResource, 'id' | 'modifiedTime'>
+export type UpdateFileDto = Omit<FileResource, 'id' | 'name' | 'parents' | 'modifiedTime'> & { name?: string }
 
 export type ListFilesRes = { files: FileResource[] };
 
@@ -164,6 +165,8 @@ export type SpreadsheetBatchReadRes = {
     valueRanges: ValueRange[],
 };
 
+export type ReadFileRes = FileResource;
+
 export type LoginResp = {
     access_token: string,
     expires_in: number,
@@ -208,7 +211,7 @@ export class GoogleClient {
                             `${input} :: bad response status code ${res.status} - ${resBody}`,
                         );
                         const context = resBody.startsWith("{") ? JSON.parse(resBody) : resBody;
-            
+
                         throw new BaseError(
                             `bad response status code ${res.status} - ${resBody}`,
                             { context },
@@ -309,8 +312,12 @@ export class GoogleClient {
         return await this.httpPatch(`https://www.googleapis.com/drive/v3/files/${fileId}${queryStr}`, file);
     }
 
-    public async uploadFileContent(fileId: string, contentType: string, body: ReadableStream | XMLHttpRequestBodyInit): Promise<FileResource> {
-        return await this.httpInvoke(`https://www.googleapis.com/upload/drive/v3/files/${fileId}`, {
+    public async uploadFileContent(fileId: string, contentType: string, body: ReadableStream | XMLHttpRequestBodyInit, params: { fields: string[] }): Promise<FileResource> {
+        const paramsLst = Object.entries(params)
+            .filter(([key, value]) => !!key && !!value)
+            .map(([key, value]) => typeof value === 'string' ? [key, value] : [key, value.join(',')]);
+        const serializedParams = paramsLst.length > 0 ? '?' + new URLSearchParams(paramsLst) : '';
+        return await this.httpInvoke(`https://www.googleapis.com/upload/drive/v3/files/${fileId}${serializedParams}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": contentType,
@@ -321,6 +328,14 @@ export class GoogleClient {
 
     public async downloadTextFile(fileId: string): Promise<string> {
         return this.httpInvokeRaw(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`).then(res => res.text());
+    }
+
+    public async readFile(fileId: string, params: { fields?: string[] }): Promise<ReadFileRes> {
+        const paramsLst = Object.entries(params)
+            .filter(([key, value]) => !!key && !!value)
+            .map(([key, value]) => typeof value === 'string' ? [key, value] : [key, value.join(',')]);
+        const serializedParams = paramsLst.length > 0 ? '?' + new URLSearchParams(paramsLst) : '';
+        return this.httpGet(`https://www.googleapis.com/drive/v3/files/${fileId}${serializedParams}`);
     }
 
     /****************/

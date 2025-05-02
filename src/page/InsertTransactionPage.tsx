@@ -13,7 +13,7 @@ import { storageServiceAtom } from '../atom/storage';
 import { useState } from 'react';
 
 export const InsertTransactionPage = () => {
-    const appConfig = useAtomValue(appConfigAtom);
+    const { conf: appConfig } = useAtomValue(appConfigAtom);
     const remoteStorageSvc = useAtomValue(storageServiceAtom);
     const [snackbarState, setSnackbarState] = useState<{ open: boolean, message: string, severity: AlertColor }>({ open: false, message: '', severity: 'success' });
     const [submittingTransaction, setSubmittingTransaction] = useState(false);
