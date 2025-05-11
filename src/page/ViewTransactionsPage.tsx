@@ -66,7 +66,7 @@ export const ViewTransactionsPage = () => {
             </IconButton>
         </Stack>
         <TableContainer component={Paper}>
-            <Table aria-label="simple table">
+            <Table aria-label="transactions list">
                 <TableHead>
                     <TableRow>
                         <TableCell>Date</TableCell>

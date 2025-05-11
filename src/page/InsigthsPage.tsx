@@ -4,7 +4,7 @@ import { storageServiceAtom } from "../atom/storage";
 import { useEffect, useState } from "react";
 import { BatchReadResult, MONTHS_NAMES } from "../service/remotestorage";
 import dayjs from "dayjs";
-import { CircularProgress, Stack } from "@mui/material";
+import { CircularProgress, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 
 export const InsightsPage = () => {
     const remoteStorageSvc = useAtomValue(storageServiceAtom);
@@ -58,12 +58,36 @@ export const InsightsPage = () => {
 
     series.sort((a, b) => a.label === 'Other' ? 1 : b.label === 'Other' ? -1 : a.label > b.label ? 1 : -1);
 
-    return <BarChart
-        height={300}
-        series={series}
-        xAxis={[{ data: monthlyTransactions.map(m => `${MONTHS_NAMES[m.month]}`), scaleType: 'band' }]}
-        yAxis={[{ width: 50 }]}
-    />;
+    const currencyFormatter = Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
+    return <>
+        <BarChart
+            height={300}
+            series={series}
+            xAxis={[{ data: monthlyTransactions.map(m => `${MONTHS_NAMES[m.month]}`), scaleType: 'band' }]}
+            yAxis={[{ width: 50 }]}
+        />
+        <TableContainer component={Paper}>
+            <Table aria-label="aggregated transactions">
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Month</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {Array.from({ length: dayjs().month() + 1 }).map((_, idx) => (
+                        <TableRow
+                            key={idx}
+                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                            <TableCell >{MONTHS_NAMES[idx]}</TableCell>
+                            <TableCell align="right">{currencyFormatter.format(Object.values(aggregatedData).map(r => r[idx] || 0).reduce((acc, next) => acc + next))}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </TableContainer>
+    </>;
 }
 
 const findTopCategories = (data: BatchReadResult[], count: number): string[] => {
