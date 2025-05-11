@@ -37,7 +37,7 @@ export const LoginPage = () => {
     const handleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
-                const loginResp: LoginResp = await fetch('/api/auth/login?' + new URLSearchParams({ code: tokenResponse.code }))
+                const loginResp: LoginResp = await fetch('/api/auth/login?' + new URLSearchParams({ code: tokenResponse.code }), { method: 'POST' })
                     .then(res => res.json());
                 const session = { accessToken: loginResp.access_token };
                 setGoogleSession(session);
