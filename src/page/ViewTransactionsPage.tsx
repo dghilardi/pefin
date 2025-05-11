@@ -47,6 +47,7 @@ export const ViewTransactionsPage = () => {
     if (monthlyTransactions.length === 0) {
         return <Stack alignItems="center" justifyContent="center" sx={{ height: '100vh' }}><CircularProgress /></Stack>;
     }
+    const currencyFormatter = Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
     return <>
         <Carousel scrollRef={scrollRef} snapPointIndexes={snapPointIndexes} monthlyTransactions={monthlyTransactions} />
         <Stack direction="row" justifyContent="space-between">
@@ -79,11 +80,11 @@ export const ViewTransactionsPage = () => {
                             key={idx}
                             sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                         >
-                            <TableCell component="th" scope="row">
+                            <TableCell>
                                 {row.date.format('YYYY-MM-DD')}
                             </TableCell>
-                            <TableCell>{row.notes}</TableCell>
-                            <TableCell align="right">{row.amount}</TableCell>
+                            <TableCell >{row.notes}</TableCell>
+                            <TableCell align="right">{currencyFormatter.format(row.amount)}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
