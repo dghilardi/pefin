@@ -1,54 +1,127 @@
-# React + TypeScript + Vite
+# Pefin: Modern Personal Finance Management 💸
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![React Version](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6%2B-B73BFE)](https://vitejs.dev/)
+[![Yarn](https://img.shields.io/badge/Yarn-1.22%2B-2C8EBB)](https://yarnpkg.com/)
 
-Currently, two official plugins are available:
+**Pefin** is a modern web-based personal finance tracker that helps you manage expenses, analyze spending patterns, and achieve financial goals. Built with React and Vite for blazing-fast performance, this app puts your financial data visualization front-and-center.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## 🚀 Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Interactive Dashboard**: Real-time expense tracking with visual charts
+- **Transaction History**: Inspect transaction history with a monthly view
+- **Data Synchronization**: Data synchronized in your google account
+- **Responsive Design**: Works flawlessly on desktop and mobile
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+---
+
+## ⚡ Quick Start
+
+### Prerequisites
+- Node.js 18+
+- Yarn 1.22+
+
+### Installation
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/dghilardi/pefin.git
+   cd pefin
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   yarn install
+   ```
+
+3. **Configure environment variables** (optional):
+   - Create `.env` file using `.env.example` template
+   - Customize settings like default currency or theme
+
+4. **Start the development server**:
+   ```bash
+   yarn dev
+   ```
+   App will open at `http://localhost:5173`
+
+---
+
+## 🛠️ Building & Deployment
+
+**Production Build**:
+```bash
+yarn build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+**Preview Production Build**:
+```bash
+yarn preview
 ```
+
+**Lint Code**:
+```bash
+yarn lint
+```
+
+---
+
+## 📈 Key Components
+
+- **Insert Transaction** Insert a new transaction
+- **Monhly Report**: Overview of monthly expenses
+- **Insights**: Full year view to better compare months
+
+---
+
+## 🧑💻 Tech Stack
+
+- **Frontend**: React 19 + TypeScript
+- **Build Tool**: Vite 6
+- **State Management**: React Context API & Jotai
+- **Charts**: Mui Charts
+- **Styling**: Mui
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch:
+   ```bash
+   git checkout -b feat/amazing-feature
+   ```
+3. Install dependencies and ensure tests pass:
+   ```bash
+   yarn install
+   yarn test
+   ```
+4. Commit your changes:
+   ```bash
+   git commit
+   ```
+5. Push to the branch:
+   ```bash
+   git push origin feat/amazing-feature
+   ```
+6. Open a Pull Request
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## 🌐 Live Demo
+
+Check out our hosted version: [https://pefin.d71.dev](https://pefin.d71.dev)
+
+---
+
+## 🙏 Acknowledgments
+
+- React community for awesome ecosystem
+- Vite team for fast development experience
