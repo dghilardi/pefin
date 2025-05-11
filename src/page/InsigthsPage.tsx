@@ -30,11 +30,13 @@ export const InsightsPage = () => {
         return <Stack alignItems="center" justifyContent="center" sx={{ height: '100vh' }}><CircularProgress /></Stack>;
     }
 
+    const topCategories = new Set(findTopCategories(monthlyTransactions, 5));
+
     const aggregatedData = monthlyTransactions
         .flatMap(mon => mon.data.map(tr => ({ year: mon.year, month: mon.month, group: tr.group, amount: tr.amount, type: tr.type })))
         .filter(tr => tr.type === 'expense')
         .reduce((acc, next) => {
-            const key = next.group || '';
+            const key = topCategories.has(next.group || '') ? next.group || '' : 'Other';
             if (!acc[key]) {
                 return { ...acc, [key]: { [next.month]: next.amount } };
             } else if (!acc[key][next.month]) {
@@ -47,14 +49,14 @@ export const InsightsPage = () => {
         }, {} as Record<string, Record<number, number>>);
 
     const series = Object.entries(aggregatedData)
-        .map(([group, entries]) => ({ 
+        .map(([group, entries]) => ({
             data: monthlyTransactions.map(m => entries[m.month] || 0),
             label: group,
             id: `${group}Id`,
             stack: 'total',
-         }));
+        }));
 
-    console.log(aggregatedData);
+    series.sort((a, b) => a.label === 'Other' ? 1 : b.label === 'Other' ? -1 : a.label > b.label ? 1 : -1);
 
     return <BarChart
         height={300}
@@ -63,3 +65,23 @@ export const InsightsPage = () => {
         yAxis={[{ width: 50 }]}
     />;
 }
+
+const findTopCategories = (data: BatchReadResult[], count: number): string[] => {
+    const amountByGroup = data
+        .flatMap(mon => mon.data.map(tr => ({ year: mon.year, month: mon.month, group: tr.group, amount: tr.amount, type: tr.type })))
+        .filter(tr => tr.type === 'expense')
+        .reduce((acc, next) => {
+            const key = next.group || '';
+            if (acc[key]) {
+                return { ...acc, [key]: acc[key] + next.amount };
+            } else {
+                return { ...acc, [key]: next.amount };
+            }
+        }, {} as Record<string, number>);
+
+    const entries = [...Object.entries(amountByGroup)];
+    entries.sort(([_ka, a], [_kb, b]) => b - a);
+    return entries
+        .slice(0, count)
+        .map(([k, _]) => k);
+};
